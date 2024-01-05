@@ -1,2 +1,2 @@
 # Bash sucks
-## I've written it in Lua because I'm a gangster.
+## I've written this monstrosity in Lua because I'm a gangster.
