@@ -28,6 +28,10 @@ function Main()
   os.execute("rm -f *.sql")
 end
 
+function FormatExec(str, ...)
+  os.execute(string.format(str, ...))
+end
+
 function ValidateUsername()
   while true do
     io.write("\n" .. "Enter username: ")
