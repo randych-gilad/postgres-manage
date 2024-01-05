@@ -104,3 +104,16 @@ function ChangePassword()
   file:close()
   VerifyResult(user, file_name)
 end
+
+function ValidateEnvVars()
+  local errors = 0
+  if not os.getenv("PGPASSWORD") then
+    io.stderr:write("PGPASSWORD environment variable not defined.\n")
+    errors = errors + 1
+  end
+  if not os.getenv("PGHOST") then
+    io.stderr:write("PGHOST environment variable not defined.\n")
+    errors = errors + 1
+  end
+  return errors
+end
