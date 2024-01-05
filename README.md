@@ -1,2 +1,2 @@
-# postgres-manage
-Postgres user and backup management written in Lua
+# Bash sucks
+## I've written it in Lua because I'm a gangster.
