@@ -23,3 +23,18 @@ function ValidatePassword()
     end
   end
 end
+
+while true do
+  local input = io.read()
+  if input == "y" then
+    print(string.format("Created .sql script for %s.\n", user))
+    break
+  elseif input == "n" then
+    os.remove(file_name)
+    print(string.format("Discarded .sql script for %s.\n", user))
+    return
+  else
+    print("Only 'y' or 'n' is accepted.")
+    input = io.read()
+  end
+end
