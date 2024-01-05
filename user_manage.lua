@@ -81,3 +81,16 @@ function CreateUser(databases)
   file:close()
   VerifyResult(user, file_name)
 end
+
+function RevokeUser(databases)
+  local user = ValidateUsername()
+  local file_name = string.format("revoke_%s.sql", user)
+  local file = assert(io.open(file_name, "w"))
+  for _, db in ipairs(databases) do
+    file:write(string.format("REVOKE ALL ON DATABASE %s FROM %s;\n", db, user))
+  end
+  file:write(string.format("REVOKE ALL ON SCHEMA public FROM %s;\n", user))
+  file:write(string.format("DROP USER %s;\n", user))
+  file:close()
+  VerifyResult(user, file_name)
+end
