@@ -94,3 +94,13 @@ function RevokeUser(databases)
   file:close()
   VerifyResult(user, file_name)
 end
+
+function ChangePassword()
+  local user = ValidateUsername()
+  local password = ValidatePassword()
+  local file_name = string.format("chpw_%s.sql", user)
+  local file = assert(io.open(file_name, "w"))
+  file:write(string.format("ALTER USER %s WITH PASSWORD '%s';", user, password))
+  file:close()
+  VerifyResult(user, file_name)
+end
