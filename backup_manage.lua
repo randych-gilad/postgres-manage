@@ -15,6 +15,8 @@ local isAlreadyExisting = function()
   exist_first = trim_find(exist_first):gsub("\n", "")
   local exist_next = io.popen(string.format("find . -mindepth 1 -type d -name '%s.*'", date)):read("*a")
   exist_next = trim_table(exist_next)
+  if #exist_first == 0 then exist_first = nil end
+  if #exist_next == 0 then exist_next = nil end
   return exist_first, exist_next
 end
 function CreatePgDumpFolder()
