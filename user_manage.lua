@@ -64,11 +64,20 @@ function VerifyResult(user, file_name)
   end
 end
 
-for _, db in ipairs(databases) do
-  file:write(string.format("GRANT CONNECT ON DATABASE %s TO %s;\n", db, user))
-end
-for _, db in ipairs(databases) do
-  file:write(string.format("\\c %s\n", db))
-  file:write(string.format("GRANT USAGE ON SCHEMA public TO %s;\n", user))
-  file:write(string.format("GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;\n", user))
+function CreateUser(databases)
+  local user = ValidateUsername()
+  local password = ValidatePassword()
+  local file_name = string.format("%s.sql", user)
+  local file = assert(io.open(file_name, "w"))
+  file:write(string.format("CREATE USER %s WITH PASSWORD '%s';\n", user, password))
+  for _, db in ipairs(databases) do
+    file:write(string.format("GRANT CONNECT ON DATABASE %s TO %s;\n", db, user))
+  end
+  for _, db in ipairs(databases) do
+    file:write(string.format("\\c %s\n", db))
+    file:write(string.format("GRANT USAGE ON SCHEMA public TO %s;\n", user))
+    file:write(string.format("GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;\n", user))
+  end
+  file:close()
+  VerifyResult(user, file_name)
 end
