@@ -1,5 +1,33 @@
 Databases = {} -- insert database list here
 
+function Main()
+  local env_var_errors = ValidateEnvVars()
+  if env_var_errors > 0 then
+    os.exit(1)
+  end
+  while true do
+    local options = {
+      ["1"] = function() CreateUser(Databases) end,
+      ["2"] = function() RevokeUser(Databases) end,
+      ["3"] = function() ChangePassword() end,
+      ["q"] = function() print("Exiting...") end,
+    }
+    io.write("Choose action:\n[1] Create user\n[2] Revoke user\n[3] Change password\n[q] Exit\n")
+    io.write("Selected option: ")
+    local user_input = io.read()
+    local selected = options[user_input]
+    if selected ~= nil then
+      selected()
+      if user_input == "q" then
+        break
+      end
+    else
+      print("Unsupported input.")
+    end
+  end
+  os.execute("rm -f *.sql")
+end
+
 function ValidateUsername()
   while true do
     io.write("\n" .. "Enter username: ")
@@ -117,3 +145,5 @@ function ValidateEnvVars()
   end
   return errors
 end
+
+Main()
