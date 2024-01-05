@@ -63,3 +63,12 @@ function VerifyResult(user, file_name)
     end
   end
 end
+
+for _, db in ipairs(databases) do
+  file:write(string.format("GRANT CONNECT ON DATABASE %s TO %s;\n", db, user))
+end
+for _, db in ipairs(databases) do
+  file:write(string.format("\\c %s\n", db))
+  file:write(string.format("GRANT USAGE ON SCHEMA public TO %s;\n", user))
+  file:write(string.format("GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;\n", user))
+end
