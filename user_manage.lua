@@ -11,3 +11,15 @@ function ValidateUsername()
     end
   end
 end
+
+function ValidatePassword()
+  while true do
+    io.write("Enter password: ")
+    local password = io.read()
+    if #password < 9 then
+      io.stderr:write("ERROR: password too short\n")
+    else
+      return password
+    end
+  end
+end
