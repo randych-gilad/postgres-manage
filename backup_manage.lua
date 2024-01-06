@@ -57,3 +57,18 @@ function CreatePgDumpFolder()
     shift_cleanup()
   end
 end
+
+CreatePgDumpFolder()
+
+function CreatePgDumps()
+  Databases = {}
+  for _, db in ipairs(Databases) do
+    print(
+      string.format("Dumping %s...", db))
+    os.execute(
+      string.format(
+        "pg_dump -U postgres -Z 9 -C %s > %s/%s.gz", os.getenv("PGHOST"), db, date, db))
+  end
+end
+
+CreatePgDumps()
