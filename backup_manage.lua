@@ -27,33 +27,41 @@ local isAlreadyExisting = function()
 end
 function CreatePgDumpFolder()
   local first, more = isAlreadyExisting()
-  print(first, more)
   local total_backups = first + more
-  print("Total backups: " .. total_backups)
   local MAX_BACKUPS = 5
+  print("Total backups: " .. total_backups)
+  print("Retention setting: " .. MAX_BACKUPS)
   local function create_folder()
     os.execute(string.format("mkdir %s", date))
     print(string.format("Created backup folder %s.", date))
   end
   local function create_folder_newer()
-    for i = 0, more do
-      os.execute(string.format("mv %s.%s %s.%s", date, i, date, i + 1))
+    if more > 0 then
+      for i = more - 1, 0, -1 do
+        os.rename(
+          string.format("%s.%s", date, i),
+          string.format("%s.%s", date, i + 1))
+        print(string.format("Renamed folder %s.%s -> %s.%s", date, i, date, i + 1))
+      end
     end
-    os.execute(string.format("mv %s %s.%s", date, date, more))
+    os.rename(
+      string.format("%s", date),
+      string.format("%s.0", date)
+    )
     create_folder()
     print(string.format("Renamed older backup to %s.0.", date))
   end
   local function shift_cleanup()
+    create_folder_newer()
     os.execute(string.format("rm -rf %s.%s", date, more))
-    os.execute(string.format("mv %s.0 %s", date, date))
-    print("Removed 1 oldest backup.")
+    print(string.format("Removed 1 oldest backup: %s.%s", date, more))
   end
 
   if first == 0 then
     create_folder()
-  elseif total_backups <= MAX_BACKUPS then
+  elseif total_backups < MAX_BACKUPS then
     create_folder_newer()
-  elseif total_backups > MAX_BACKUPS then
+  elseif total_backups == MAX_BACKUPS then
     shift_cleanup()
   end
 end
