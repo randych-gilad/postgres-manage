@@ -34,28 +34,26 @@ function CreatePgDumpFolder()
   local function create_folder()
     os.execute(string.format("mkdir %s", date))
     print(string.format("Created backup folder %s.", date))
-    do return end
   end
   local function create_folder_newer()
-    os.execute(string.format("mkdir %s.%s", date, more))
-    print(string.format("Created backup folder %s.%s", date, more))
-    do return end
+    for i = 0, more do
+      os.execute(string.format("mv %s.%s %s.%s", date, i, date, i + 1))
+    end
+    os.execute(string.format("mv %s %s.%s", date, date, more))
+    create_folder()
+    print(string.format("Renamed older backup to %s.0.", date))
   end
   local function shift_cleanup()
-    os.execute(string.format("rm -rf %s", date))
+    os.execute(string.format("rm -rf %s.%s", date, more))
     os.execute(string.format("mv %s.0 %s", date, date))
-    for i = 1, 3 do
-      os.execute(string.format("mv %s.%s %s.%s", date, i, date, i - 1))
-    end
     print("Removed 1 oldest backup.")
-    do return end
   end
 
   if first == 0 then
     create_folder()
-  elseif total_backups < MAX_BACKUPS then
+  elseif total_backups <= MAX_BACKUPS then
     create_folder_newer()
-  elseif total_backups == MAX_BACKUPS then
+  elseif total_backups > MAX_BACKUPS then
     shift_cleanup()
   end
 end
