@@ -4,26 +4,19 @@ local isAlreadyExisting = function()
     return find:gsub("./", "")
   end
   local function trim_table(find)
-    local mytable = {}
+    local result = {}
     for line in find:gmatch("[^\r\n]+") do
       line = trim_find(line)
-      table.insert(mytable, line)
+      table.insert(result, line)
     end
-    return mytable
+    return result
   end
-  local function count_lines(find)
-    local count = 0
-    if find == nil then return 0 end
-    for _ in find:gmatch("[^\r\n]+") do
-      count = count + 1
-    end
-    return count
-  end
+
   local exist_first = io.popen(string.format("find . -mindepth 1 -type d -name '%s'", date)):read("*a")
-  exist_first = trim_find(exist_first):gsub("\n", "")
   local exist_more = io.popen(string.format("find . -mindepth 1 -type d -name '%s.*'", date)):read("*a")
+  exist_first = trim_find(exist_first):gsub("\n", "")
   exist_more = trim_table(exist_more)
-  return count_lines(exist_first), #exist_more
+  return exist_first == "" and 0 or 1, #exist_more
 end
 function CreatePgDumpFolder()
   local first, more = isAlreadyExisting()
@@ -46,8 +39,7 @@ function CreatePgDumpFolder()
     end
     os.rename(
       string.format("%s", date),
-      string.format("%s.0", date)
-    )
+      string.format("%s.0", date))
     create_folder()
     print(string.format("Renamed older backup to %s.0.", date))
   end
