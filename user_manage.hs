@@ -1,12 +1,13 @@
 import Data.Char (toLower)
 import Data.List (isInfixOf)
+import System.Environment (getEnv, lookupEnv)
 import System.Exit (exitFailure, exitSuccess)
 import System.IO (hFlush, stdout)
 import Text.Printf (printf)
-import Control.Monad.RWS (MonadWriter(pass))
 
 main :: IO ()
 main = do
+  validateEnvVars
   displayString "Enter username: "
   user_input <- getLine
   let user = map toLower $ filter (/= ' ') user_input
@@ -25,6 +26,27 @@ displayString msg = do
 
 dbs :: [String]
 dbs = []
+
+validateEnvVars :: IO (String, String)
+validateEnvVars = do
+  let pghost_error = "PGHOST environment variable is not defined"
+  let pgpassword_error = "PGPASSWORD environment variable is not defined"
+  pghost <- getEnv "PGHOST"
+  pgpassword <-
+    getEnv
+      "PGPASSWORD"
+  case (pghost, pgpassword) of
+    ("", "") -> do
+      putStrLn pghost_error
+      putStrLn pgpassword_error
+      exitFailure
+    ("", _) -> do
+      putStrLn pghost_error
+      exitFailure
+    (_, "") -> do
+      putStrLn pgpassword_error
+      exitFailure
+    _ -> return (pghost, pgpassword)
 
 validateUser :: String -> IO String
 validateUser user
@@ -75,5 +97,5 @@ changePassword :: String -> String -> IO ()
 changePassword user password = do
   writeFile file_name ""
   appendFile file_name $ printf "ALTER USER %s WITH PASSWORD '%s';" user password
-    where
+  where
     file_name = printf "chpw_%s.sql" user
