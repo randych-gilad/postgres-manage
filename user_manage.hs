@@ -1,3 +1,4 @@
+import Data.Char (toLower)
 import Data.List (isInfixOf)
 import System.Exit (exitFailure, exitSuccess)
 import System.IO (hFlush, stdout)
@@ -7,6 +8,7 @@ main :: IO ()
 main = do
   promptString "Enter username: "
   user <- getLine
+  let user = map toLower user
   validateUser user
   promptString "Enter password: "
   password <- getLine
@@ -19,7 +21,7 @@ promptString msg = do
   hFlush stdout
 
 dbs :: [String]
-dbs = ["kek", "kekus"]
+dbs = []
 
 validateUser :: String -> IO String
 validateUser user
@@ -38,7 +40,17 @@ validatePassword password
 createUser :: String -> String -> [String] -> IO ()
 createUser user password dbs = do
   writeFile file_name $ printf "CREATE USER %s WITH PASSWORD '%s';\n" user password
+  mapM_
+    ( \db ->
+        appendFile file_name $ printf "GRANT CONNECT ON DATABASE %s TO %s;\n" db user
+    )
+    dbs
+  mapM_
+    ( \db -> do
+        appendFile file_name $ printf "\\c %s\n" db
+        appendFile file_name $ printf "GRANT USAGE ON SCHEMA public TO %s;\n" user
+        appendFile file_name $ printf "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;\n" user
+    )
+    dbs
   where
-    -- mapM_ putStrLn $ map (\db -> db ++ ".sql") dbs
-
     file_name = printf "%s.sql" user
