@@ -1,6 +1,6 @@
-import Control.Exception (SomeException, catch)
 import Data.Char (toLower)
 import Data.List (isInfixOf)
+import System.Directory (removeFile)
 import System.Environment (getEnv, lookupEnv)
 import System.Exit (exitFailure, exitSuccess)
 import System.IO (hFlush, hPutStrLn, openFile, stderr, stdout)
@@ -19,6 +19,8 @@ main = do
   createUser user password dbs
   revokeUser user dbs
   changePassword user password
+  result <- verifyResult user "testuser.sql"
+  putStrLn result
 
 displayMessage :: String -> IO ()
 displayMessage message = do
@@ -27,6 +29,22 @@ displayMessage message = do
 
 dbs :: [String]
 dbs = []
+
+verifyResult :: String -> FilePath -> IO String
+verifyResult user file_name = do
+  putStrLn ""
+  content <- readFile file_name
+  putStrLn content
+  putStrLn "Is this OK? (y/n)"
+  answer <- getLine
+  case answer of
+    "y" -> return content
+    "n" -> do
+      removeFile file_name
+      return (printf "Discarded .sql script for %s." user)
+    _ -> do
+      putStrLn "Only y/n are accepted."
+      verifyResult user file_name
 
 validateEnvVars :: IO (Maybe (Maybe String), Maybe (Maybe String))
 validateEnvVars = do
@@ -77,6 +95,7 @@ createUser user password dbs = do
         appendFile file_name $ printf "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;\n" user
     )
     dbs
+  putStrLn ("Created .sql script for " ++ user)
   where
     file_name = printf "%s.sql" user
 
