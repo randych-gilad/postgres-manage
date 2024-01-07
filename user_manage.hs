@@ -7,13 +7,14 @@ import Text.Printf (printf)
 main :: IO ()
 main = do
   displayString "Enter username: "
-  user <- getLine
-  let user = map toLower user
+  user_input <- getLine
+  let user = map toLower $ filter (/= ' ') user_input
   validateUser user
   displayString "Enter password: "
   password <- getLine
   validatePassword password
   createUser user password dbs
+  revokeUser user dbs
 
 displayString :: String -> IO ()
 displayString msg = do
@@ -54,3 +55,16 @@ createUser user password dbs = do
     dbs
   where
     file_name = printf "%s.sql" user
+
+revokeUser :: String -> [String] -> IO ()
+revokeUser user dbs = do
+  writeFile file_name ""
+  mapM_
+    ( \db ->
+        appendFile file_name $ printf "REVOKE ALL ON DATABASE %s FROM %s;\n" db user
+    )
+    dbs
+  appendFile file_name $ printf "REVOKE ALL ON SCHEMA public FROM %s;\n" user
+  appendFile file_name $ printf "DROP USER %s;\n" user
+  where
+    file_name = printf "revoke_%s.sql" user
