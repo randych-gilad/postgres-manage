@@ -1,27 +1,28 @@
+import Control.Exception (SomeException, catch)
 import Data.Char (toLower)
 import Data.List (isInfixOf)
 import System.Environment (getEnv, lookupEnv)
 import System.Exit (exitFailure, exitSuccess)
-import System.IO (hFlush, stdout)
+import System.IO (hFlush, hPutStrLn, openFile, stderr, stdout)
 import Text.Printf (printf)
 
 main :: IO ()
 main = do
   validateEnvVars
-  displayString "Enter username: "
+  displayMessage "Enter username: "
   user_input <- getLine
   let user = map toLower $ filter (/= ' ') user_input
   validateUser user
-  displayString "Enter password: "
+  displayMessage "Enter password: "
   password <- getLine
   validatePassword password
   createUser user password dbs
   revokeUser user dbs
   changePassword user password
 
-displayString :: String -> IO ()
-displayString msg = do
-  putStr msg
+displayMessage :: String -> IO ()
+displayMessage message = do
+  putStr message
   hFlush stdout
 
 dbs :: [String]
@@ -29,8 +30,6 @@ dbs = []
 
 validateEnvVars :: IO (Maybe (Maybe String), Maybe (Maybe String))
 validateEnvVars = do
-  let pghost_error = "PGHOST environment variable is not defined"
-  let pgpassword_error = "PGPASSWORD environment variable is not defined"
   pghost <- lookupEnv "PGHOST"
   pgpassword <- lookupEnv "PGPASSWORD"
   case (pghost, pgpassword) of
@@ -45,6 +44,9 @@ validateEnvVars = do
       putStrLn pgpassword_error
       exitFailure
     _ -> return (Just pghost, Just pgpassword)
+  where
+    pghost_error = "PGHOST environment variable is not defined"
+    pgpassword_error = "PGPASSWORD environment variable is not defined"
 
 validateUser :: String -> IO String
 validateUser user
