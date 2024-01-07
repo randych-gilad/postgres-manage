@@ -6,17 +6,17 @@ import Text.Printf (printf)
 
 main :: IO ()
 main = do
-  promptString "Enter username: "
+  displayString "Enter username: "
   user <- getLine
   let user = map toLower user
   validateUser user
-  promptString "Enter password: "
+  displayString "Enter password: "
   password <- getLine
   validatePassword password
   createUser user password dbs
 
-promptString :: String -> IO ()
-promptString msg = do
+displayString :: String -> IO ()
+displayString msg = do
   putStr msg
   hFlush stdout
 
