@@ -27,26 +27,24 @@ displayString msg = do
 dbs :: [String]
 dbs = []
 
-validateEnvVars :: IO (String, String)
+validateEnvVars :: IO (Maybe (Maybe String), Maybe (Maybe String))
 validateEnvVars = do
   let pghost_error = "PGHOST environment variable is not defined"
   let pgpassword_error = "PGPASSWORD environment variable is not defined"
-  pghost <- getEnv "PGHOST"
-  pgpassword <-
-    getEnv
-      "PGPASSWORD"
+  pghost <- lookupEnv "PGHOST"
+  pgpassword <- lookupEnv "PGPASSWORD"
   case (pghost, pgpassword) of
-    ("", "") -> do
+    (Nothing, Nothing) -> do
       putStrLn pghost_error
       putStrLn pgpassword_error
       exitFailure
-    ("", _) -> do
+    (Nothing, Just pgpassword) -> do
       putStrLn pghost_error
       exitFailure
-    (_, "") -> do
+    (Just pghost, Nothing) -> do
       putStrLn pgpassword_error
       exitFailure
-    _ -> return (pghost, pgpassword)
+    _ -> return (Just pghost, Just pgpassword)
 
 validateUser :: String -> IO String
 validateUser user
