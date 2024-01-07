@@ -3,6 +3,7 @@ import Data.List (isInfixOf)
 import System.Exit (exitFailure, exitSuccess)
 import System.IO (hFlush, stdout)
 import Text.Printf (printf)
+import Control.Monad.RWS (MonadWriter(pass))
 
 main :: IO ()
 main = do
@@ -15,6 +16,7 @@ main = do
   validatePassword password
   createUser user password dbs
   revokeUser user dbs
+  changePassword user password
 
 displayString :: String -> IO ()
 displayString msg = do
@@ -68,3 +70,10 @@ revokeUser user dbs = do
   appendFile file_name $ printf "DROP USER %s;\n" user
   where
     file_name = printf "revoke_%s.sql" user
+
+changePassword :: String -> String -> IO ()
+changePassword user password = do
+  writeFile file_name ""
+  appendFile file_name $ printf "ALTER USER %s WITH PASSWORD '%s';" user password
+    where
+    file_name = printf "chpw_%s.sql" user
