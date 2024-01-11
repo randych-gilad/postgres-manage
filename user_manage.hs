@@ -4,23 +4,24 @@ import Data.Maybe (isNothing)
 import System.Directory (removeFile)
 import System.Environment (lookupEnv)
 import System.Exit (exitFailure)
-import System.IO (hFlush, openFile, stdout)
+import System.IO (hFlush, stdout)
 import Text.Printf (printf)
 
 type EnvVarUndefined = [String]
 
 main :: IO ()
 main = do
-  reportMissingVars envVars
+  reportMissingVars inputsEnvVar
   displayMessage "Enter username: "
-  user_input <- getLine
-  let user = map toLower $ filter (/= ' ') user_input
-  validateUser user
+  user <- do
+    user_input <- getLine
+    validateUser user_input
   displayMessage "Enter password: "
-  password <- getLine
-  validatePassword password
-  createUser user password dbs
-  revokeUser user dbs
+  password <- do
+    password_input <- getLine
+    validatePassword password_input
+  createUser user password inputsDB
+  revokeUser user inputsDB
   changePassword user password
   result <- verifyResult user "testuser.sql"
   putStrLn result
@@ -30,11 +31,11 @@ displayMessage message = do
   putStr message
   hFlush stdout
 
-dbs :: [String]
-dbs = []
+inputsDB :: [String]
+inputsDB = []
 
-envVars :: [String]
-envVars = ["PGHOST", "PGPASSWORD"]
+inputsEnvVar :: [String]
+inputsEnvVar = ["PGHOST", "PGPASSWORD"]
 
 verifyResult :: String -> FilePath -> IO String
 verifyResult user file_name = do
@@ -57,25 +58,25 @@ reportMissingVars envVars = do
   toValidate <- lookupMissingVars envVars
   case toValidate of
     [] -> putStr ""
-    [_] -> do
+    _ -> do
       mapM_ putStrLn toValidate
       exitFailure
 
 lookupMissingVars :: [String] -> IO [String]
-lookupMissingVars envVars = do
-  results <- mapM lookupEnv envVars
-  return $ getMissingVars envVars results
+lookupMissingVars env_vars = do
+  results <- mapM lookupEnv env_vars
+  return $ getMissingVars env_vars results
 
 getMissingVars :: [String] -> [Maybe String] -> EnvVarUndefined
-getMissingVars envVars results =
-  [env ++ " environment variable not defined" | (env, result) <- zip envVars results, isNothing result]
+getMissingVars env_vars results =
+  [env ++ " environment variable not defined" | (env, result) <- zip env_vars results, isNothing result]
 
 validateUser :: String -> IO String
 validateUser user
   | "postgres" `isInfixOf` user = do
       putStrLn "Username cannot contain postgres"
       exitFailure
-  | otherwise = return user
+  | otherwise = return $ map toLower $ filter (/= ' ') user
 
 validatePassword :: String -> IO String
 validatePassword password
