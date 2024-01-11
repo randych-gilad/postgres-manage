@@ -1,14 +1,17 @@
 import Data.Char (toLower)
 import Data.List (isInfixOf)
+import Data.Maybe (isNothing)
 import System.Directory (removeFile)
-import System.Environment (getEnv, lookupEnv)
-import System.Exit (exitFailure, exitSuccess)
-import System.IO (hFlush, hPutStrLn, openFile, stderr, stdout)
+import System.Environment (lookupEnv)
+import System.Exit (exitFailure)
+import System.IO (hFlush, openFile, stdout)
 import Text.Printf (printf)
+
+type EnvVarUndefined = [String]
 
 main :: IO ()
 main = do
-  validateEnvVars
+  reportMissingVars envVars
   displayMessage "Enter username: "
   user_input <- getLine
   let user = map toLower $ filter (/= ' ') user_input
@@ -30,6 +33,9 @@ displayMessage message = do
 dbs :: [String]
 dbs = []
 
+envVars :: [String]
+envVars = ["PGHOST", "PGPASSWORD"]
+
 verifyResult :: String -> FilePath -> IO String
 verifyResult user file_name = do
   putStrLn ""
@@ -46,25 +52,23 @@ verifyResult user file_name = do
       putStrLn "Only y/n are accepted."
       verifyResult user file_name
 
-validateEnvVars :: IO (Maybe (Maybe String), Maybe (Maybe String))
-validateEnvVars = do
-  pghost <- lookupEnv "PGHOST"
-  pgpassword <- lookupEnv "PGPASSWORD"
-  case (pghost, pgpassword) of
-    (Nothing, Nothing) -> do
-      putStrLn pghost_error
-      putStrLn pgpassword_error
+reportMissingVars :: [String] -> IO ()
+reportMissingVars envVars = do
+  toValidate <- lookupMissingVars envVars
+  case toValidate of
+    [] -> putStr ""
+    [_] -> do
+      mapM_ putStrLn toValidate
       exitFailure
-    (Nothing, Just pgpassword) -> do
-      putStrLn pghost_error
-      exitFailure
-    (Just pghost, Nothing) -> do
-      putStrLn pgpassword_error
-      exitFailure
-    _ -> return (Just pghost, Just pgpassword)
-  where
-    pghost_error = "PGHOST environment variable is not defined"
-    pgpassword_error = "PGPASSWORD environment variable is not defined"
+
+lookupMissingVars :: [String] -> IO [String]
+lookupMissingVars envVars = do
+  results <- mapM lookupEnv envVars
+  return $ getMissingVars envVars results
+
+getMissingVars :: [String] -> [Maybe String] -> EnvVarUndefined
+getMissingVars envVars results =
+  [env ++ " environment variable not defined" | (env, result) <- zip envVars results, isNothing result]
 
 validateUser :: String -> IO String
 validateUser user
