@@ -16,7 +16,7 @@ main = do
   user <- do
     user_input <- getLine
     validateUser user_input
-  displayMessage "Enter passwd: "
+  displayMessage "Enter password: "
   password <- do
     password_input <- getLine
     validatePassword password_input
