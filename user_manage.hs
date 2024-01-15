@@ -48,10 +48,10 @@ verifyResult user file_name = do
   putStrLn "Is this OK? (y/n)"
   answer <- getLine
   case answer of
-    "y" -> return content
+    "y" -> pure content
     "n" -> do
       removeFile file_name
-      return $ printf "Discarded .sql script for %s." user
+      pure $ printf "Discarded .sql script for %s." user
     _ -> do
       putStrLn "Only y/n are accepted."
       verifyResult user file_name
@@ -68,7 +68,7 @@ reportMissingVars envVars = do
 lookupMissingVars :: [String] -> IO [String]
 lookupMissingVars env_vars = do
   results <- mapM lookupEnv env_vars
-  return $ getMissingVars env_vars results
+  pure $ getMissingVars env_vars results
 
 getMissingVars :: [String] -> [Maybe String] -> EnvVarUndefined
 getMissingVars env_vars results =
@@ -79,14 +79,14 @@ validateUser user
   | "postgres" `isInfixOf` user = do
       putStrLn "Username cannot contain postgres"
       exitFailure
-  | otherwise = return $ map toLower $ filter (/= ' ') user
+  | otherwise = pure $ map toLower $ filter (/= ' ') user
 
 validatePassword :: String -> IO String
 validatePassword passwd
   | length passwd < 9 = do
       putStrLn "Password too short"
       exitFailure
-  | otherwise = return passwd
+  | otherwise = pure passwd
 
 createUserSQL :: String -> String -> [String] -> String
 createUserSQL user passwd dbs =
