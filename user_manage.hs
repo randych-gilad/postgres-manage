@@ -4,7 +4,7 @@ import Data.Maybe (isNothing)
 import System.Directory (removeFile)
 import System.Environment (lookupEnv)
 import System.Exit (exitFailure)
-import System.IO (hFlush, stdout, writeFile)
+import System.IO (hFlush, stdout)
 import Text.Printf (printf)
 
 type EnvVarUndefined = [String]
@@ -109,13 +109,13 @@ createUserSQL user passwd dbs =
 revokeUserSQL :: String -> [String] -> String
 revokeUserSQL user dbs = do
   unlines $
-    map (revokeDbGrant user) dbs
-      ++ [revokeSchemaPublic user]
-      ++ [dropUserStatement user]
+    map revokeDbGrant dbs
+      ++ [revokeSchemaPublic]
+      ++ [dropUserStatement]
   where
-    revokeDbGrant = printf "REVOKE ALL ON DATABASE %s FROM %s;\n"
-    revokeSchemaPublic = printf "REVOKE ALL ON SCHEMA public FROM %s;\n"
-    dropUserStatement = printf "DROP USER %s;\n"
+    revokeDbGrant db = printf "REVOKE ALL ON DATABASE %s FROM %s;\n" db user
+    revokeSchemaPublic = printf "REVOKE ALL ON SCHEMA public FROM %s;\n" user
+    dropUserStatement = printf "DROP USER %s;\n" user
 
 changePassword :: String -> String -> String
 changePassword user passwd = do
