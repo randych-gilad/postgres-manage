@@ -4,7 +4,7 @@ import Data.Maybe (isNothing)
 import System.Directory (removeFile)
 import System.Environment (lookupEnv)
 import System.Exit (exitFailure)
-import System.IO (hFlush, stdout)
+import System.IO (hFlush, stdout, writeFile)
 import Text.Printf (printf)
 
 type EnvVarUndefined = [String]
@@ -16,14 +16,17 @@ main = do
   user <- do
     user_input <- getLine
     validateUser user_input
-  displayMessage "Enter password: "
+  displayMessage "Enter passwd: "
   password <- do
     password_input <- getLine
     validatePassword password_input
-  createUser user password inputsDB
-  revokeUser user inputsDB
-  changePassword user password
-  result <- verifyResult user "testuser.sql"
+  writeFile (user ++ ".sql") $
+    createUserSQL user password inputsDB
+  writeFile ("revoke_" ++ user ++ ".sql") $
+    revokeUserSQL user inputsDB
+  writeFile ("chpw_" ++ user ++ ".sql") $
+    changePassword user password
+  result <- verifyResult user $ user ++ ".sql"
   putStrLn result
 
 displayMessage :: String -> IO ()
@@ -48,7 +51,7 @@ verifyResult user file_name = do
     "y" -> return content
     "n" -> do
       removeFile file_name
-      return (printf "Discarded .sql script for %s." user)
+      return $ printf "Discarded .sql script for %s." user
     _ -> do
       putStrLn "Only y/n are accepted."
       verifyResult user file_name
@@ -79,47 +82,43 @@ validateUser user
   | otherwise = return $ map toLower $ filter (/= ' ') user
 
 validatePassword :: String -> IO String
-validatePassword password
-  | length password < 9 = do
+validatePassword passwd
+  | length passwd < 9 = do
       putStrLn "Password too short"
       exitFailure
-  | otherwise = return password
+  | otherwise = return passwd
 
-createUser :: String -> String -> [String] -> IO ()
-createUser user password dbs = do
-  writeFile file_name $ printf "CREATE USER %s WITH PASSWORD '%s';\n" user password
-  mapM_
-    ( \db ->
-        appendFile file_name $ printf "GRANT CONNECT ON DATABASE %s TO %s;\n" db user
-    )
-    dbs
-  mapM_
-    ( \db -> do
-        appendFile file_name $ printf "\\c %s\n" db
-        appendFile file_name $ printf "GRANT USAGE ON SCHEMA public TO %s;\n" user
-        appendFile file_name $ printf "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;\n" user
-    )
-    dbs
-  putStrLn ("Created .sql script for " ++ user)
+createUserSQL :: String -> String -> [String] -> String
+createUserSQL user passwd dbs =
+  unlines $
+    [createUserStatement]
+      ++ map mkConnectGrant dbs
+      ++ map mkUsageGrant dbs
   where
-    file_name = printf "%s.sql" user
+    createUserStatement = printf "CREATE USER %s WITH PASSWORD '%s';" user passwd
 
-revokeUser :: String -> [String] -> IO ()
-revokeUser user dbs = do
-  writeFile file_name ""
-  mapM_
-    ( \db ->
-        appendFile file_name $ printf "REVOKE ALL ON DATABASE %s FROM %s;\n" db user
-    )
-    dbs
-  appendFile file_name $ printf "REVOKE ALL ON SCHEMA public FROM %s;\n" user
-  appendFile file_name $ printf "DROP USER %s;\n" user
-  where
-    file_name = printf "revoke_%s.sql" user
+    mkConnectGrant db = printf "GRANT CONNECT ON DATABASE %s TO %s;" db user
 
-changePassword :: String -> String -> IO ()
-changePassword user password = do
-  writeFile file_name ""
-  appendFile file_name $ printf "ALTER USER %s WITH PASSWORD '%s';" user password
+    mkUsageGrant db =
+      printf "\\c %s\n" db
+        ++ "\n"
+        ++ printf "GRANT USAGE ON SCHEMA public TO %s;" user
+        ++ "\n"
+        ++ printf "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;" user
+
+revokeUserSQL :: String -> [String] -> String
+revokeUserSQL user dbs = do
+  unlines $
+    map (revokeDbGrant user) dbs
+      ++ [revokeSchemaPublic user]
+      ++ [dropUserStatement user]
   where
-    file_name = printf "chpw_%s.sql" user
+    revokeDbGrant = printf "REVOKE ALL ON DATABASE %s FROM %s;\n"
+    revokeSchemaPublic = printf "REVOKE ALL ON SCHEMA public FROM %s;\n"
+    dropUserStatement = printf "DROP USER %s;\n"
+
+changePassword :: String -> String -> String
+changePassword user passwd = do
+  unlines [changePasswordStatement user passwd]
+  where
+    changePasswordStatement = printf "ALTER USER %s WITH PASSWORD '%s';"
