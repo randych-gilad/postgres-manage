@@ -47,8 +47,15 @@ inputsDB = []
 inputsEnvVar :: [String]
 inputsEnvVar = ["PGHOST", "PGPASSWORD"]
 
-promptAction action = do
-  undefined
+promptAction = do
+  putStrLn "Choose action:"
+  putStrLn "[1] Create user"
+  putStrLn "[2] Revoke user"
+  putStrLn "[3] Change password"
+  putStrLn "[q] Exit\n"
+  putStr "Selected option: "
+  action <- getLine
+  pure ()
 
 verifyResult :: String -> FilePath -> IO String
 verifyResult user file_name = do
