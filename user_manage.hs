@@ -1,3 +1,4 @@
+import Control.Monad (when)
 import Data.Char (toLower)
 import Data.List (isInfixOf)
 import Data.Maybe (isNothing)
@@ -15,11 +16,17 @@ main = do
   displayMessage "Enter username: "
   user <- do
     user_input <- getLine
-    validateUser user_input
+    when ("postgres" `isInfixOf` user_input) $ do
+      putStrLn "Username cannot contain postgres"
+      exitFailure
+    pure user_input
   displayMessage "Enter password: "
   password <- do
     password_input <- getLine
-    validatePassword password_input
+    when (length password_input < 9) $ do
+      putStrLn "Password too short"
+      exitFailure
+    pure password_input
   writeFile (user ++ ".sql") $
     createUserSQL user password inputsDB
   writeFile ("revoke_" ++ user ++ ".sql") $
@@ -39,6 +46,9 @@ inputsDB = []
 
 inputsEnvVar :: [String]
 inputsEnvVar = ["PGHOST", "PGPASSWORD"]
+
+promptAction action = do
+  undefined
 
 verifyResult :: String -> FilePath -> IO String
 verifyResult user file_name = do
@@ -73,20 +83,6 @@ lookupMissingVars env_vars = do
 getMissingVars :: [String] -> [Maybe String] -> EnvVarUndefined
 getMissingVars env_vars results =
   [env ++ " environment variable not defined" | (env, result) <- zip env_vars results, isNothing result]
-
-validateUser :: String -> IO String
-validateUser user
-  | "postgres" `isInfixOf` user = do
-      putStrLn "Username cannot contain postgres"
-      exitFailure
-  | otherwise = pure $ map toLower $ filter (/= ' ') user
-
-validatePassword :: String -> IO String
-validatePassword passwd
-  | length passwd < 9 = do
-      putStrLn "Password too short"
-      exitFailure
-  | otherwise = pure passwd
 
 createUserSQL :: String -> String -> [String] -> String
 createUserSQL user passwd dbs =
