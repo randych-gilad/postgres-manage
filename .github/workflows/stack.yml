@@ -1,0 +1,27 @@
+name: Stack Build
+
+on:
+  push:
+    branches:
+      - feature/refactor-hs
+      - feat/stack_ci
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-latest
+          - windows-latest
+        resolver:
+          - ghc-9.8.1
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: freckle/stack-action@v4
+        with:
+          working-directory: postgres-manage/
+          fast: true
