@@ -1,0 +1,62 @@
+cabal-version: 2.2
+
+name:           postgres-manage
+version:        0.0.1
+description:    Please see the README on GitHub at <https://github.com/randych-gilad/postgres-manage#readme>
+homepage:       https://github.com/randych-gilad/postgres-manage#readme
+bug-reports:    https://github.com/randych-gilad/postgres-manage/issues
+author:         Randych
+copyright:      2024 Randych
+license:        GPL-3.0-or-later
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/randych-gilad/postgres-manage
+
+library
+  exposed-modules:
+    Types
+  other-modules:
+      Paths_postgres_manage
+  autogen-modules:
+      Paths_postgres_manage
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+executable postgres-manage-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_postgres_manage
+  autogen-modules:
+      Paths_postgres_manage
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , postgres-manage
+  default-language: Haskell2010
+
+test-suite postgres-manage-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_postgres_manage
+  autogen-modules:
+      Paths_postgres_manage
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , postgres-manage
+  default-language: Haskell2010

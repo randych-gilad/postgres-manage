@@ -1,0 +1,51 @@
+name: postgres-manage
+version: 0.0.1
+github: "randych-gilad/postgres-manage"
+license: GPL-3.0-or-later
+author: Randych
+copyright: "2024 Randych"
+
+extra-source-files:
+  - README.md
+  - CHANGELOG.md
+
+description: Please see the README on GitHub at <https://github.com/githubuser/postgres-manage#readme>
+
+dependencies:
+  - base >= 4.7 && < 5
+
+ghc-options:
+  - -Wall
+  - -Wcompat
+  - -Widentities
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wmissing-export-lists
+  - -Wmissing-home-modules
+  - -Wpartial-fields
+  - -Wredundant-constraints
+
+library:
+  source-dirs: src
+
+executables:
+  postgres-manage-exe:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - postgres-manage
+
+tests:
+  postgres-manage-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - postgres-manage
