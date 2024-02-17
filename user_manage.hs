@@ -132,13 +132,11 @@ createUserSQL :: Username -> Password -> DBs -> SqlStatement
 createUserSQL username passwd dbs =
   unlines $
     [createUserStatement]
-      ++ map mkConnectGrant dbs
-      ++ map mkUsageGrant dbs
+      ++ fmap mkConnectGrant dbs
+      ++ fmap mkUsageGrant dbs
   where
     createUserStatement = printf "CREATE USER %s WITH PASSWORD '%s';" username passwd
-
     mkConnectGrant db = printf "GRANT CONNECT ON DATABASE %s TO %s;" db username
-
     mkUsageGrant db =
       printf "\\c %s\n" db
         ++ "\n"
@@ -149,7 +147,7 @@ createUserSQL username passwd dbs =
 revokeUserSQL :: Username -> DBs -> SqlStatement
 revokeUserSQL username dbs = do
   unlines $
-    map revokeDbGrant dbs
+    fmap revokeDbGrant dbs
       ++ [revokeSchemaPublic]
       ++ [dropUserStatement]
   where
