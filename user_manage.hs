@@ -46,7 +46,7 @@ displayMessage message = do
   hFlush stdout
 
 inputsDB :: [String]
-inputsDB = []
+inputsDB = ["web", "web-api"]
 
 inputsEnvVar :: [String]
 inputsEnvVar = ["PGHOST", "PGPASSWORD"]
