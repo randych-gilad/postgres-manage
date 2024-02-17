@@ -119,11 +119,11 @@ reportMissingVars envVars = do
       traverse_ putStrLn toValidate
       exitFailure
   where
-    lookupMissingVars env_vars = do
-      results <- traverse lookupEnv env_vars
-      pure $ getMissingVars env_vars results
-    getMissingVars env_vars results =
-      [env ++ " environment variable not defined" | (env, result) <- zip env_vars results, isNothing result]
+    lookupMissingVars envVars = do
+      results <- traverse lookupEnv envVars
+      pure $ getMissingVars envVars results
+    getMissingVars envVars results =
+      [env ++ " environment variable not defined" | (env, result) <- zip envVars results, isNothing result]
 
 userCreateSQL :: Username -> Password -> DBs -> SqlStatement
 userCreateSQL username passwd dbs =
