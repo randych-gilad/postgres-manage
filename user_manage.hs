@@ -1,4 +1,5 @@
 import Control.Monad (when)
+import Control.Monad.Reader (ask, ReaderT)
 import Data.Char (toLower)
 import Data.Foldable (traverse_)
 import Data.List (isInfixOf)
@@ -10,16 +11,12 @@ import System.IO (hFlush, stdout)
 import Text.Printf (printf)
 
 type EnvVars = [String]
-
 type EnvVarUndefined = [String]
-
 type Username = String
-
 type Password = String
-
 type DBs = [String]
-
 type SqlStatement = String
+type ReaderIO r a = ReaderT r IO a
 
 main :: IO ()
 main = do
@@ -45,10 +42,10 @@ displayMessage message = do
   putStr message
   hFlush stdout
 
-inputsDB :: [String]
+inputsDB :: DBs
 inputsDB = ["web", "web-api"]
 
-inputsEnvVar :: [String]
+inputsEnvVar :: EnvVars
 inputsEnvVar = ["PGHOST", "PGPASSWORD"]
 
 promptAction :: Username -> Password -> DBs -> IO ()
@@ -144,11 +141,11 @@ userCreateSQL username passwd dbs =
 userRevokeSQL :: Username -> DBs -> SqlStatement
 userRevokeSQL username dbs = do
   unlines $
-    fmap revokeDbGrant dbs
+    fmap mkRevokeGrant dbs
       ++ [revokeSchemaPublic]
       ++ [dropUserStatement]
   where
-    revokeDbGrant db = printf "REVOKE ALL ON DATABASE %s FROM %s;\n" db username
+    mkRevokeGrant db = printf "REVOKE ALL ON DATABASE %s FROM %s;\n" db username
     revokeSchemaPublic = printf "REVOKE ALL ON SCHEMA public FROM %s;\n" username
     dropUserStatement = printf "DROP USER %s;\n" username
 
