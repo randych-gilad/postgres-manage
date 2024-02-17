@@ -63,21 +63,21 @@ promptAction username passwd dbs = do
   case action of
     "1" -> do
       writeFile file_name $
-        createUserSQL username passwd dbs
+        userCreateSQL username passwd dbs
       result <- verifyResult username file_name
       print result
       where
         file_name = username ++ ".sql"
     "2" -> do
       writeFile file_name $
-        revokeUserSQL username dbs
+        userRevokeSQL username dbs
       result <- verifyResult username file_name
       print result
       where
         file_name = "revoke_" ++ username ++ ".sql"
     "3" -> do
       writeFile file_name $
-        changePassword username passwd
+        userPasswordChangeSQL username passwd
       result <- verifyResult username file_name
       print result
       where
@@ -118,18 +118,15 @@ reportMissingVars envVars = do
     _ -> do
       traverse_ putStrLn toValidate
       exitFailure
+  where
+    lookupMissingVars env_vars = do
+      results <- traverse lookupEnv env_vars
+      pure $ getMissingVars env_vars results
+    getMissingVars env_vars results =
+      [env ++ " environment variable not defined" | (env, result) <- zip env_vars results, isNothing result]
 
-lookupMissingVars :: EnvVars -> IO [String]
-lookupMissingVars env_vars = do
-  results <- traverse lookupEnv env_vars
-  pure $ getMissingVars env_vars results
-
-getMissingVars :: EnvVars -> [Maybe String] -> EnvVarUndefined
-getMissingVars env_vars results =
-  [env ++ " environment variable not defined" | (env, result) <- zip env_vars results, isNothing result]
-
-createUserSQL :: Username -> Password -> DBs -> SqlStatement
-createUserSQL username passwd dbs =
+userCreateSQL :: Username -> Password -> DBs -> SqlStatement
+userCreateSQL username passwd dbs =
   unlines $
     [createUserStatement]
       ++ fmap mkConnectGrant dbs
@@ -144,8 +141,8 @@ createUserSQL username passwd dbs =
         ++ "\n"
         ++ printf "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;" username
 
-revokeUserSQL :: Username -> DBs -> SqlStatement
-revokeUserSQL username dbs = do
+userRevokeSQL :: Username -> DBs -> SqlStatement
+userRevokeSQL username dbs = do
   unlines $
     fmap revokeDbGrant dbs
       ++ [revokeSchemaPublic]
@@ -155,8 +152,8 @@ revokeUserSQL username dbs = do
     revokeSchemaPublic = printf "REVOKE ALL ON SCHEMA public FROM %s;\n" username
     dropUserStatement = printf "DROP USER %s;\n" username
 
-changePassword :: Username -> Password -> SqlStatement
-changePassword username passwd = do
-  unlines [changePasswordStatement username passwd]
+userPasswordChangeSQL :: Username -> Password -> SqlStatement
+userPasswordChangeSQL username passwd = do
+  unlines [userPasswordChangeSQLStatement username passwd]
   where
-    changePasswordStatement = printf "ALTER USER %s WITH PASSWORD '%s';"
+    userPasswordChangeSQLStatement = printf "ALTER USER %s WITH PASSWORD '%s';"
