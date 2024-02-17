@@ -1,5 +1,6 @@
 import Control.Monad (when)
 import Data.Char (toLower)
+import Data.Foldable (traverse_)
 import Data.List (isInfixOf)
 import Data.Maybe (isNothing)
 import System.Directory (removeFile)
@@ -115,12 +116,12 @@ reportMissingVars envVars = do
   case toValidate of
     [] -> putStr ""
     _ -> do
-      mapM_ putStrLn toValidate
+      traverse_ putStrLn toValidate
       exitFailure
 
 lookupMissingVars :: EnvVars -> IO [String]
 lookupMissingVars env_vars = do
-  results <- mapM lookupEnv env_vars
+  results <- traverse lookupEnv env_vars
   pure $ getMissingVars env_vars results
 
 getMissingVars :: EnvVars -> [Maybe String] -> EnvVarUndefined
