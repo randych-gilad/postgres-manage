@@ -10,9 +10,8 @@ import System.Exit (exitSuccess, die)
 import System.IO (hFlush, stdout)
 import Text.Printf (printf)
 
-type EnvVars = [String]
-type Username = String
-type Password = String
+newtype Username = User { getUser :: String }
+newtype Password = Password { getPassword :: String }
 type DBs = [String]
 type SqlStatement = String
 
@@ -24,17 +23,13 @@ main = do
     let errorMessage = unlines $ (++ " environment variable not defined") <$> missingVars
     die errorMessage
   displayMessage "Enter username: "
-  user <- do
-    user_input <- getLine
-    when ("postgres" `isInfixOf` user_input) $ do
-      die "Username cannot contain postgres"
-    pure user_input
+  user <- promptUser
+  when ("postgres" `isInfixOf` getUser user) $
+   die "Username cannot contain postgres"
   displayMessage "Enter password: "
-  password <- do
-    password_input <- getLine
-    when (length password_input < 9) $ do
-      die "Password too short"
-    pure password_input
+  password <- promptPassword
+  when (length (getPassword password) < 9) $
+    die "Password too short"
   promptAction user password inputsDB
 
 displayMessage :: String -> IO ()
@@ -45,11 +40,17 @@ displayMessage message = do
 inputsDB :: DBs
 inputsDB = ["web", "web-api"]
 
-inputsEnvVar :: EnvVars
+inputsEnvVar :: [String]
 inputsEnvVar = ["PGHOST", "PGPASSWORD"]
 
+promptUser :: IO Username
+promptUser = User <$> getLine
+
+promptPassword :: IO Password
+promptPassword = Password <$> getLine
+
 promptAction :: Username -> Password -> DBs -> IO ()
-promptAction username passwd dbs = do
+promptAction username password dbs = do
   putStrLn "Choose action:"
   putStrLn "[1] Create username"
   putStrLn "[2] Revoke username"
@@ -60,31 +61,31 @@ promptAction username passwd dbs = do
   case action of
     "1" -> do
       writeFile file_name $
-        userCreateSQL username passwd dbs
+        userCreateSQL username password dbs
       result <- verifyResult username file_name
       print result
       where
-        file_name = username ++ ".sql"
+        file_name = getUser username ++ ".sql"
     "2" -> do
       writeFile file_name $
         userRevokeSQL username dbs
       result <- verifyResult username file_name
       print result
       where
-        file_name = "revoke_" ++ username ++ ".sql"
+        file_name = "revoke_" ++ getUser username ++ ".sql"
     "3" -> do
       writeFile file_name $
-        userPasswordChangeSQL username passwd
+        userPasswordChangeSQL username password
       result <- verifyResult username file_name
       print result
       where
-        file_name = "chpw_" ++ username ++ ".sql"
+        file_name = "chpw_" ++ getUser username ++ ".sql"
     "q" -> do
       putStrLn "Exiting...\n"
       exitSuccess
     _ -> do
       putStrLn "Unsupported input\n"
-      promptAction username passwd dbs
+      promptAction username password dbs
 
 verifyResult :: Username -> FilePath -> IO Bool
 verifyResult username file_name = do
@@ -101,7 +102,7 @@ verifyResult username file_name = do
       -- while it should be own FilePath -> IO () function
     "n" -> do
       removeFile file_name
-      putStrLn $ "Discarded .sql script for " ++ username
+      putStrLn $ "Discarded .sql script for " ++ getUser username
       pure False
     _ -> do
       putStrLn "Only y/n are accepted."
@@ -118,34 +119,34 @@ parseEnvVars = do
         ) envVars
 
 userCreateSQL :: Username -> Password -> DBs -> SqlStatement
-userCreateSQL username passwd dbs =
+userCreateSQL username password dbs =
   unlines $
     [createUserStatement]
-      ++ fmap mkConnectGrant dbs
-      ++ fmap mkUsageGrant dbs
+      ++ (mkConnectGrant <$> dbs)
+      ++ (mkUsageGrant <$> dbs)
   where
-    createUserStatement = printf "CREATE USER %s WITH PASSWORD '%s';" username passwd
-    mkConnectGrant db = printf "GRANT CONNECT ON DATABASE %s TO %s;" db username
+    createUserStatement = printf "CREATE USER %s WITH PASSWORD '%s';" (getUser username) (getPassword password)
+    mkConnectGrant db = printf "GRANT CONNECT ON DATABASE %s TO %s;" db (getUser username)
     mkUsageGrant db =
       printf "\\c %s\n" db
         ++ "\n"
-        ++ printf "GRANT USAGE ON SCHEMA public TO %s;" username
+        ++ printf "GRANT USAGE ON SCHEMA public TO %s;" (getUser username)
         ++ "\n"
-        ++ printf "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;" username
+        ++ printf "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;" (getUser username)
 
 userRevokeSQL :: Username -> DBs -> SqlStatement
 userRevokeSQL username dbs = do
   unlines $
-    fmap mkRevokeGrant dbs
+    mkRevokeGrant <$> dbs
       ++ [revokeSchemaPublic]
       ++ [dropUserStatement]
   where
-    mkRevokeGrant db = printf "REVOKE ALL ON DATABASE %s FROM %s;\n" db username
-    revokeSchemaPublic = printf "REVOKE ALL ON SCHEMA public FROM %s;\n" username
-    dropUserStatement = printf "DROP USER %s;\n" username
+    mkRevokeGrant db = printf "REVOKE ALL ON DATABASE %s FROM %s;\n" db (getUser username)
+    revokeSchemaPublic = printf "REVOKE ALL ON SCHEMA public FROM %s;\n" (getUser username)
+    dropUserStatement = printf "DROP USER %s;\n" (getUser username)
 
 userPasswordChangeSQL :: Username -> Password -> SqlStatement
-userPasswordChangeSQL username passwd = do
-  unlines [userPasswordChangeSQLStatement username passwd]
+userPasswordChangeSQL username password = do
+  unlines [userPasswordChangeSQLStatement (getUser username) (getPassword password)]
   where
     userPasswordChangeSQLStatement = printf "ALTER USER %s WITH PASSWORD '%s';"
