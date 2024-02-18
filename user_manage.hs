@@ -21,7 +21,7 @@ main = do
   envVars <- runReaderT parseEnvVars inputsEnvVar
   when (any (isNothing . snd) envVars) $ do
     let missingVars = fst <$> filter (isNothing . snd) envVars
-    let errorMessage = intercalate "\n" $ (++ " environment variable not defined") <$> missingVars
+    let errorMessage = unlines $ (++ " environment variable not defined") <$> missingVars
     die errorMessage
   displayMessage "Enter username: "
   user <- do
