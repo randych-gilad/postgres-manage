@@ -2,16 +2,15 @@ import Control.Monad (when)
 import Control.Monad.Reader (ask, liftIO, runReaderT, ReaderT)
 import Data.Char (toLower)
 import Data.Foldable (traverse_)
-import Data.List (isInfixOf)
+import Data.List (isInfixOf, intercalate)
 import Data.Maybe (isNothing)
 import System.Directory (removeFile)
 import System.Environment (lookupEnv)
-import System.Exit (exitFailure, exitSuccess)
+import System.Exit (exitSuccess, die)
 import System.IO (hFlush, stdout)
 import Text.Printf (printf)
 
 type EnvVars = [String]
-type EnvVarUndefined = [String]
 type Username = String
 type Password = String
 type DBs = [String]
@@ -19,7 +18,11 @@ type SqlStatement = String
 
 main :: IO ()
 main = do
-  -- reportMissingVars inputsEnvVar
+  envVars <- runReaderT parseEnvVars inputsEnvVar
+  when (any (isNothing . snd) envVars) $ do
+    let missingVars = fst <$> filter (isNothing . snd) envVars
+    let errorMessage = intercalate "\n" $ (++ " environment variable not defined") <$> missingVars
+    die errorMessage
   displayMessage "Enter username: "
   user <- do
     user_input <- getLine
@@ -106,25 +109,15 @@ verifyResult username file_name = do
       putStrLn "Only y/n are accepted."
       verifyResult username file_name
 
-reportMissingVars :: EnvVars -> IO ()
-reportMissingVars envVars = do
-  toValidate <- lookupMissingVars envVars
-  case toValidate of
-    [] -> putStr ""
-    _ -> do
-      traverse_ putStrLn toValidate
-      exitFailure
-  where
-    lookupMissingVars envVars = do
-      results <- traverse lookupEnv envVars
-      pure $ getMissingVars envVars results
-    getMissingVars envVars results =
-      [env ++ " environment variable not defined" | (env, result) <- zip envVars results, isNothing result]
-
-getEnvValues :: ReaderT [String] IO [(String, Maybe String)]
-getEnvValues = do
-  envs <- ask
-  liftIO $ traverse (\var -> do result <- lookupEnv var; pure (var, result)) envs
+parseEnvVars :: ReaderT [String] IO [(String, Maybe String)]
+parseEnvVars = do
+  envVars <- ask
+  liftIO $
+    traverse (
+      \var -> do
+        result <- lookupEnv var
+        pure (var, result)
+        ) envVars
 
 userCreateSQL :: Username -> Password -> DBs -> SqlStatement
 userCreateSQL username passwd dbs =
