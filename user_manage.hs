@@ -12,7 +12,7 @@ import Text.Printf (printf)
 
 newtype Username = User { getUser :: String }
 newtype Password = Password { getPassword :: String }
-type DBs = [String]
+newtype DatabaseList = DBList { getDBList :: [String] }
 type SqlStatement = String
 
 main :: IO ()
@@ -37,8 +37,8 @@ displayMessage message = do
   putStr message
   hFlush stdout
 
-inputsDB :: DBs
-inputsDB = ["web", "web-api"]
+inputsDB :: DatabaseList
+inputsDB = DBList ["web", "web-api"]
 
 inputsEnvVar :: [String]
 inputsEnvVar = ["PGHOST", "PGPASSWORD"]
@@ -49,7 +49,7 @@ promptUser = User <$> getLine
 promptPassword :: IO Password
 promptPassword = Password <$> getLine
 
-promptAction :: Username -> Password -> DBs -> IO ()
+promptAction :: Username -> Password -> DatabaseList -> IO ()
 promptAction username password dbs = do
   putStrLn "Choose action:"
   putStrLn "[1] Create username"
@@ -118,12 +118,12 @@ parseEnvVars = do
         pure (var, result)
         ) envVars
 
-userCreateSQL :: Username -> Password -> DBs -> SqlStatement
+userCreateSQL :: Username -> Password -> DatabaseList -> SqlStatement
 userCreateSQL username password dbs =
   unlines $
     [createUserStatement]
-      ++ (mkConnectGrant <$> dbs)
-      ++ (mkUsageGrant <$> dbs)
+      ++ (mkConnectGrant <$> getDBList dbs)
+      ++ (mkUsageGrant <$> getDBList dbs)
   where
     createUserStatement = printf "CREATE USER %s WITH PASSWORD '%s';" (getUser username) (getPassword password)
     mkConnectGrant db = printf "GRANT CONNECT ON DATABASE %s TO %s;" db (getUser username)
@@ -134,10 +134,10 @@ userCreateSQL username password dbs =
         ++ "\n"
         ++ printf "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;" (getUser username)
 
-userRevokeSQL :: Username -> DBs -> SqlStatement
+userRevokeSQL :: Username -> DatabaseList -> SqlStatement
 userRevokeSQL username dbs = do
   unlines $
-    mkRevokeGrant <$> dbs
+    mkRevokeGrant <$> getDBList dbs
       ++ [revokeSchemaPublic]
       ++ [dropUserStatement]
   where
