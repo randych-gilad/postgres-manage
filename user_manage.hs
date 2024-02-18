@@ -1,5 +1,5 @@
 import Control.Monad (when)
-import Control.Monad.Reader (ask, ReaderT)
+import Control.Monad.Reader (ask, liftIO, runReaderT, ReaderT)
 import Data.Char (toLower)
 import Data.Foldable (traverse_)
 import Data.List (isInfixOf)
@@ -16,11 +16,10 @@ type Username = String
 type Password = String
 type DBs = [String]
 type SqlStatement = String
-type ReaderIO r a = ReaderT r IO a
 
 main :: IO ()
 main = do
-  reportMissingVars inputsEnvVar
+  -- reportMissingVars inputsEnvVar
   displayMessage "Enter username: "
   user <- do
     user_input <- getLine
@@ -121,6 +120,11 @@ reportMissingVars envVars = do
       pure $ getMissingVars envVars results
     getMissingVars envVars results =
       [env ++ " environment variable not defined" | (env, result) <- zip envVars results, isNothing result]
+
+getEnvValues :: ReaderT [String] IO [(String, Maybe String)]
+getEnvValues = do
+  envs <- ask
+  liftIO $ traverse (\var -> do result <- lookupEnv var; pure (var, result)) envs
 
 userCreateSQL :: Username -> Password -> DBs -> SqlStatement
 userCreateSQL username passwd dbs =
