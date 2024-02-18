@@ -27,15 +27,13 @@ main = do
   user <- do
     user_input <- getLine
     when ("postgres" `isInfixOf` user_input) $ do
-      putStrLn "Username cannot contain postgres"
-      exitFailure
+      die "Username cannot contain postgres"
     pure user_input
   displayMessage "Enter password: "
   password <- do
     password_input <- getLine
     when (length password_input < 9) $ do
-      putStrLn "Password too short"
-      exitFailure
+      die "Password too short"
     pure password_input
   promptAction user password inputsDB
 
