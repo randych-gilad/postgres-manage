@@ -1,36 +1,4 @@
-Databases = {} -- insert database list here
-
-function Main()
-  local env_var_errors = ValidateEnvVars()
-  if env_var_errors > 0 then
-    os.exit(1)
-  end
-  while true do
-    local options = {
-      ["1"] = function() CreateUser(Databases) end,
-      ["2"] = function() RevokeUser(Databases) end,
-      ["3"] = function() ChangePassword() end,
-      ["q"] = function() print("Exiting...") end,
-    }
-    io.write("Choose action:\n[1] Create user\n[2] Revoke user\n[3] Change password\n[q] Exit\n")
-    io.write("Selected option: ")
-    local user_input = io.read()
-    local selected = options[user_input]
-    if selected ~= nil then
-      selected()
-      if user_input == "q" then
-        break
-      end
-    else
-      print("Unsupported input.")
-    end
-  end
-  os.execute("rm -f *.sql")
-end
-
-function FormatExec(str, ...)
-  os.execute(string.format(str, ...))
-end
+Databases = {}
 
 function ValidateUsername()
   while true do
@@ -114,6 +82,24 @@ function CreateUser(databases)
   VerifyResult(user, file_name)
 end
 
+function CreateUserRW(databases)
+  local user = ValidateUsername()
+  local password = ValidatePassword()
+  local file_name = string.format("%s.sql", user)
+  local file = assert(io.open(file_name, "w"))
+  file:write(string.format("CREATE USER %s WITH PASSWORD '%s';\n", user, password))
+  for _, db in ipairs(databases) do
+    file:write(string.format("GRANT CONNECT ON DATABASE %s TO %s;\n", db, user))
+  end
+  for _, db in ipairs(databases) do
+    file:write(string.format("\\c %s\n", db))
+    file:write(string.format("GRANT USAGE ON SCHEMA public TO %s;\n", user))
+    file:write(string.format("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO %s;\n", user))
+  end
+  file:close()
+  VerifyResult(user, file_name)
+end
+
 function RevokeUser(databases)
   local user = ValidateUsername()
   local file_name = string.format("revoke_%s.sql", user)
@@ -148,6 +134,35 @@ function ValidateEnvVars()
     errors = errors + 1
   end
   return errors
+end
+
+function Main()
+  local env_var_errors = ValidateEnvVars()
+  if env_var_errors > 0 then
+    os.exit(1)
+  end
+  while true do
+    local options = {
+      ["1"] = function() CreateUser(Databases) end,
+      ["2"] = function() CreateUserRW(Databases) end,
+      ["3"] = function() RevokeUser(Databases) end,
+      ["4"] = function() ChangePassword() end,
+      ["q"] = function() print("Exiting...") end,
+    }
+    io.write("Choose action:\n[1] Create user\n[2] Create RW user\n[3] Revoke user\n[4] Change password\n[q] Exit\n")
+    io.write("Selected option: ")
+    local user_input = io.read()
+    local selected = options[user_input]
+    if selected ~= nil then
+      selected()
+      if user_input == "q" then
+        break
+      end
+    else
+      print("Unsupported input.")
+    end
+  end
+  os.execute("rm -f *.sql")
 end
 
 Main()
